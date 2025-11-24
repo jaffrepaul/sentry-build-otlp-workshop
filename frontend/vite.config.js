@@ -9,6 +9,11 @@ export default defineConfig({
     project: "sentry-build-otlp-workshop-frontend"
   })],
 
+  server: {
+    port: 5173,
+    strictPort: true, // Fail if port is already in use instead of trying next port
+  },
+
   build: {
     sourcemap: true
   }

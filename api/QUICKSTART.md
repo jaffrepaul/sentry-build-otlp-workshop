@@ -1,211 +1,152 @@
-# Quick Start Guide
+# Quick Start
 
-Get the OpenTelemetry E-commerce API running in 5 minutes!
+Get running in 5 minutes.
 
 ## Prerequisites
 
 - Node.js 18+
-- Free Neon account (sign up at https://neon.tech)
+- Free Neon account (https://neon.tech)
+- Sentry project with OTLP enabled
 
-## Step 1: Install Dependencies
+## Setup
+
+### 1. Install
 
 ```bash
 npm install
 ```
 
-## Step 2: Setup Database with Neon
+### 2. Configure Environment
 
-Create a free PostgreSQL database:
+**Option A: Auto-setup with neondb (Recommended)**
 
 ```bash
+# Create .env from example
+cp .env.example .env
+
+# Auto-create Neon database and add DATABASE_URL to .env
 npx neondb -y
 ```
 
-This will:
-- Prompt you to login/signup to Neon (opens browser)
-- Create a new Neon project
-- Display a connection string
+The `neondb` command will open your browser to login/create a Neon account, create a PostgreSQL database, and automatically add the `DATABASE_URL` to your `.env` file.
 
-**Copy the connection string** - it looks like:
-```
-postgresql://user:password@ep-xyz-123.us-east-2.aws.neon.tech/neondb?sslmode=require
-```
-
-## Step 3: Configure Environment
-
-1. Copy the environment file:
+**Option B: Manual setup**
 
 ```bash
+# Create .env from example
 cp .env.example .env
+
+# Get DATABASE_URL from Neon Console: https://console.neon.tech
+# Projects > Your Project > Connection Details
+# Add it to .env manually
 ```
 
-2. Edit `.env` and add your **Neon connection string** from Step 2:
+### 3. Add Sentry Configuration
+
+Edit `.env` and add your Sentry OTLP endpoints (get from Sentry: Project Settings > Client Keys):
 
 ```bash
-DATABASE_URL=postgresql://user:password@ep-xyz-123.us-east-2.aws.neon.tech/neondb?sslmode=require
+# Update these values in .env
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://YOUR-ORG.ingest.sentry.io/api/PROJECT-ID/integration/otlp/v1/traces
+OTEL_EXPORTER_OTLP_TRACES_HEADERS=x-sentry-auth=sentry sentry_key=YOUR_PUBLIC_KEY
+
+# Optional: For logs
+OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=https://YOUR-ORG.ingest.sentry.io/api/PROJECT-ID/integration/otlp/v1/logs
+OTEL_EXPORTER_OTLP_LOGS_HEADERS=x-sentry-auth=sentry sentry_key=YOUR_PUBLIC_KEY
 ```
 
-3. Add your Sentry OTLP endpoints to `.env`:
-
-```bash
-OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=<your-traces-endpoint>
-OTEL_EXPORTER_OTLP_TRACES_HEADERS="<your-auth-header>"
-```
-
-**Note:** Your instructor will show you where to get these values from your Sentry project.
-
-## Step 4: Initialize Database Schema
+### 4. Initialize Database
 
 ```bash
 npm run db:setup
 ```
 
-This creates tables and seeds sample data (products, users) in your Neon database.
+Creates tables and seeds sample data.
 
-You should see:
-
-```
-✅ Schema created successfully
-✅ Database seeded successfully
-✨ Database setup complete!
-```
-
-## Step 5: Start the Server
+### 5. Start
 
 ```bash
 npm start
 ```
 
-You should see:
+You should see `📡 Mode: DIRECT` and `📡 Server listening on port 3000`.
 
-```
-📡 Mode: DIRECT
-📡 Exporting to: https://your-org.ingest.us.sentry.io/...
-🔭 OpenTelemetry instrumentation initialized
-✅ In-memory cache initialized
-🚀 OpenTelemetry E-commerce API Server
-📡 Server listening on port 3000
-```
-
-**Check your current mode anytime:**
+### 6. Test
 
 ```bash
-npm run mode:status
-```
-
-## Step 6: Test It!
-
-Open a new terminal and run:
-
-```bash
-# Quick API test
-npm run test:api
-
-# Or manually:
+# Quick test
 curl http://localhost:3000/api/products
 
-# Run load test (generates ~40 traces with realistic e-commerce scenarios:
-# product fetches, order creation, payment failures, inventory errors, etc)
+# Or run load test (generates ~40 traces)
 npm test
 ```
 
-## Step 7: Check Sentry
+### 7. View in Sentry
 
-1. Go to your Sentry project
-2. Navigate to **Explore** > **Traces** or **Logs**
-3. You should see traces and logs from your API calls!
+Go to your Sentry project → **Explore** → **Traces**
 
-## Common Issues
+## Switching Modes
 
-**"Database connection error"**
-→ Double-check your DATABASE_URL in .env - make sure it includes `?sslmode=require`
-
-**"Not seeing traces in Sentry"**
-→ Double-check your OTLP endpoint URL and auth header in .env
-
-**"neondb command asks for login"**
-→ This is expected - you need a free Neon account. It will open a browser to login/signup
-
-**"Can't create Neon project"**
-→ Make sure you completed the Neon signup/login in the browser
-
-## Switching Export Modes
-
-You can send telemetry directly to Sentry, or through an OpenTelemetry Collector.
-
-**Check current mode:**
+### Check Current Mode
 
 ```bash
 npm run mode:status
 ```
 
-### Switch to Collector Mode
+### Direct Mode (Default)
 
-Send telemetry through an OpenTelemetry Collector instead of directly to Sentry. The collector will be automatically downloaded and run without Docker.
-
-**Prerequisites:** Same as Steps 1-4 above (database must be configured).
-
-```bash
-# 1. Add to .env (if not already present):
-#    OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR-ORG-ID.ingest.us.sentry.io
-#    SENTRY_AUTH_HEADER=sentry_key=YOUR_PUBLIC_KEY,sentry_version=7
-
-# 2. Switch mode
-npm run mode:collector
-
-# 3. Start collector (downloads binary automatically on first run)
-npm run collector:start
-
-# 4. Start app
-npm start
-```
-
-Look for: `"📡 Mode: COLLECTOR"`
-
-The first time you run `npm run collector:start`, it will download the OpenTelemetry Collector binary (~100MB). This is a one-time download.
-
-**Collector Management:**
-
-```bash
-# Start collector
-npm run collector:start
-
-# Stop collector
-npm run collector:stop
-
-# Check collector health
-npm run collector:health
-
-# View collector logs
-npm run collector:logs
-```
-
-**Test it:** Use the same commands from Step 6:
-
-```bash
-npm run test:api
-npm test
-```
-
-Traces now flow: App → Collector (localhost:4318) → Sentry
-
-### Switch to Direct Mode
+App sends directly to Sentry.
 
 ```bash
 npm run mode:direct
 npm start
 ```
 
-Look for: `"📡 Mode: DIRECT"`
+### Collector Mode
 
-## What's Next?
+App sends to local OpenTelemetry Collector, which forwards to Sentry.
 
-- Switch between direct and collector modes
-- Explore the API endpoints (see README.md)
-- Check out the manual instrumentation in `src/services/`
-- Modify the code and see traces update in real-time
-- Try triggering errors to see how they appear in Sentry
+```bash
+# Add to .env if not present:
+OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR-ORG.ingest.sentry.io
+SENTRY_AUTH_HEADER=sentry_key=YOUR_PUBLIC_KEY,sentry_version=7
 
-## Need Help?
+# Switch mode
+npm run mode:collector
 
-Check the full README.md for detailed documentation.
+# Start collector (auto-downloads binary ~100MB on first run)
+npm run collector:start
+
+# Start app
+npm start
+```
+
+**Collector commands:**
+```bash
+npm run collector:start   # Start
+npm run collector:stop    # Stop
+npm run collector:health  # Health check
+npm run collector:logs    # View logs
+```
+
+## Troubleshooting
+
+**Database connection error**
+- Check `DATABASE_URL` includes `?sslmode=require`
+- Verify Neon project is active at https://console.neon.tech
+
+**No traces in Sentry**
+- Verify OTLP endpoint URL is correct
+- Check Sentry public key in headers
+- Enable debug logging (see README.md)
+
+**Port already in use**
+- Change `PORT=3001` in .env
+
+## Next Steps
+
+See [README.md](README.md) for:
+- API endpoints
+- Manual instrumentation examples
+- Error scenarios
+- Development tips
